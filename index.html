@@ -11,36 +11,39 @@
     html, body {
       width: 100%; height: 100%;
       overflow: hidden;
-      /* CRÍTICO: background transparent para o vídeo aparecer */
       background: transparent !important;
     }
 
-    /* ── Remove UI padrão A-Frame ── */
+    /* Remove TODO painel/botão padrão do A-Frame e AR.js */
     .a-enter-vr, .a-enter-ar,
-    .a-loader-title, .a-orientation-modal { display: none !important; }
+    .a-loader-title, .a-orientation-modal,
+    .arjs-loader, #arjs-video-container > div,
+    [id^="arjs-"] > div { display: none !important; }
 
-    /* ── CANVAS: deve ser transparente em cima do vídeo ── */
+    /* Canvas transparente sobre o vídeo */
     canvas, .a-canvas {
       position: fixed !important;
       top: 0 !important; left: 0 !important;
       width: 100vw !important; height: 100vh !important;
-      /* CRÍTICO: sem background, sem opacidade */
       background: transparent !important;
-      opacity: 1 !important;
       z-index: 1 !important;
     }
 
-    /* ── VÍDEO da câmera: atrás do canvas ── */
+    /* Vídeo da câmera atrás do canvas */
     video {
       position: fixed !important;
       top: 0 !important; left: 0 !important;
       width: 100vw !important; height: 100vh !important;
       object-fit: cover !important;
-      /* CRÍTICO: z-index menor que o canvas */
       z-index: 0 !important;
       display: block !important;
-      visibility: visible !important;
       opacity: 1 !important;
+    }
+
+    /* Esconde qualquer elemento filho direto do body que não seja
+       a-scene, canvas, video ou nossos elementos — evita painéis brancos */
+    body > div:not(#screen-welcome):not(#toast) {
+      display: none !important;
     }
 
     /* ── Tela inicial ── */
@@ -51,7 +54,6 @@
       z-index: 9999;
       font-family: 'Segoe UI', system-ui, sans-serif;
     }
-
     .card {
       background: rgba(15,15,15,0.97);
       border: 1px solid rgba(255,255,255,0.1);
@@ -63,14 +65,12 @@
     }
     .card h2 { font-size: 1.35rem; margin-bottom: 12px; }
     .card p  { font-size: 0.9rem; opacity: 0.8; margin: 5px 0; }
-
     #btn-start {
       margin-top: 20px;
       background: #38bdf8; border: none;
       padding: 12px 0; width: 100%;
       border-radius: 30px; color: white;
-      font-size: 1rem; font-family: inherit;
-      cursor: pointer;
+      font-size: 1rem; font-family: inherit; cursor: pointer;
     }
     #btn-start:active { background: #0ea5e9; }
 
@@ -90,7 +90,6 @@
 </head>
 <body>
 
-  <!-- Tela inicial -->
   <div id="screen-welcome">
     <div class="card">
       <h2>🐦 AR Bird</h2>
@@ -103,17 +102,24 @@
 
   <div id="toast"></div>
 
-  <!-- Scripts carregados ANTES da cena -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
 
+  <!--
+    CORREÇÕES ANDROID:
+    1. logarithmicDepthBuffer REMOVIDO  → causava crash/travamento de GPU
+    2. antialias: false                 → reduz uso de memória GPU ~40%
+    3. powerPreference: low-power       → evita o Chrome matar o processo
+    4. debugUIEnabled: false            → remove painel branco do AR.js
+    5. sem "embedded"                   → AR.js gerencia tamanho sozinho
+  -->
   <a-scene
     vr-mode-ui="enabled: false"
-    renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true; premultipliedAlpha: false"
+    renderer="antialias: false; alpha: true; premultipliedAlpha: false; powerPreference: low-power"
     arjs="trackingMethod: best; sourceType: webcam; facingMode: environment; debugUIEnabled: false"
   >
-    <a-assets timeout="10000">
+    <a-assets timeout="15000">
       <a-asset-item id="bird-model" src="bird.glb"></a-asset-item>
     </a-assets>
 
@@ -156,38 +162,43 @@
     document.querySelector('#bird').addEventListener('model-loaded', () => toast('✨ Modelo OK!'));
     document.querySelector('#bird').addEventListener('model-error',  () => toast('⚠️ bird.glb não encontrado', true));
 
-    /* ── CORREÇÃO PRINCIPAL ANDROID:
-       O WebGL renderer do A-Frame no Android define
-       gl.clearColor com alpha=1 (opaco), cobrindo o vídeo.
-       Precisamos forçar alpha=0 após a cena inicializar.    ── */
+    /* ── Força canvas transparente (fix tela preta Android) ── */
     document.querySelector('a-scene').addEventListener('renderstart', () => {
       const renderer = document.querySelector('a-scene').renderer;
-      if (renderer) {
-        renderer.setClearColor(0x000000, 0); // alpha 0 = transparente
-        renderer.setPixelRatio(window.devicePixelRatio);
-      }
+      if (renderer) renderer.setClearColor(0x000000, 0);
     });
 
-    /* ── Fix vídeo Android ─────────────────────── */
-    function fixVideo() {
-      document.querySelectorAll('video').forEach(v => {
-        v.setAttribute('playsinline', '');
-        v.setAttribute('webkit-playsinline', '');
-        v.style.cssText = `
-          position: fixed !important;
-          top: 0 !important; left: 0 !important;
-          width: 100vw !important; height: 100vh !important;
-          object-fit: cover !important;
-          z-index: 0 !important;
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-        `;
+    /* ── Remove painéis indesejados do AR.js/A-Frame ── */
+    function removeJunk() {
+      document.querySelectorAll(
+        '.arjs-loader, [style*="position: absolute"], [style*="position:absolute"]'
+      ).forEach(el => {
+        // Não remove nossos elementos
+        if (el.id === 'screen-welcome' || el.id === 'toast') return;
+        if (el.closest('a-scene')) return;
+        el.style.display = 'none';
       });
     }
 
-    /* Aplica várias vezes pois o AR.js recria o elemento vídeo */
-    [0, 500, 1000, 2000, 3500].forEach(t => setTimeout(fixVideo, t));
+    /* ── Fix vídeo Android ─────────────────────── */
+    function fixVideo() {
+      removeJunk();
+      document.querySelectorAll('video').forEach(v => {
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+        v.style.cssText = [
+          'position:fixed!important',
+          'top:0!important', 'left:0!important',
+          'width:100vw!important', 'height:100vh!important',
+          'object-fit:cover!important',
+          'z-index:0!important',
+          'display:block!important',
+          'opacity:1!important'
+        ].join(';');
+      });
+    }
+
+    [0, 300, 800, 1500, 3000].forEach(d => setTimeout(fixVideo, d));
 
     /* ── Erros na tela ─────────────────────────── */
     window.addEventListener('error', e => {
@@ -195,108 +206,6 @@
     });
     window.addEventListener('unhandledrejection', e => {
       toast(`❌ ${e.reason}`, true);
-    });
-  </script>
-</body>
-</html></head>
-<body>
-
-  <!-- Tela inicial -->
-  <div id="ui-overlay">
-    <div id="hint-box">
-      <h2>🐦 AR Bird</h2>
-      <p>Coloque <b>bird.glb</b> na mesma pasta</p>
-      <p>Abra via <b>HTTPS</b> (GitHub Pages ✓)</p>
-      <p>Aponte para o <b>marcador Hiro</b></p>
-      <button id="btn-start">▶ Começar</button>
-    </div>
-  </div>
-
-  <div id="status-toast"></div>
-
-  <!--
-    SEM o atributo "embedded":
-    O AR.js gerencia o tamanho da cena sozinho (fullscreen).
-    Com "embedded" o dev precisa definir width/height via CSS
-    — se esquecer, a cena fica com tamanho 0 e a câmera some.
-  -->
-  <a-scene
-    vr-mode-ui="enabled: false"
-    renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true"
-    arjs="trackingMethod: best; sourceType: webcam; facingMode: environment; debugUIEnabled: false; displayWidth: 1280; displayHeight: 720"
-  >
-    <a-assets>
-      <a-asset-item id="bird-model" src="bird.glb"></a-asset-item>
-    </a-assets>
-
-    <a-marker preset="hiro">
-      <a-circle
-        position="0 0.005 0"
-        radius="0.38"
-        rotation="-90 0 0"
-        color="#000"
-        opacity="0.15"
-      ></a-circle>
-
-      <a-gltf-model
-        id="bird"
-        src="#bird-model"
-        position="0 0.1 0"
-        scale="0.22 0.22 0.22"
-        animation-mixer
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
-      ></a-gltf-model>
-    </a-marker>
-
-    <a-entity camera look-controls="enabled: false"></a-entity>
-  </a-scene>
-
-  <script>
-    /* ── Toast ───────────────────────────────────────────────────── */
-    let _toastTimer;
-    function showToast(msg, persistent) {
-      const t = document.getElementById('status-toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      clearTimeout(_toastTimer);
-      if (!persistent) _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
-    }
-
-    /* ── Botão Começar ───────────────────────────────────────────── */
-    document.getElementById('btn-start').addEventListener('click', () => {
-      document.getElementById('ui-overlay').style.display = 'none';
-      showToast('🐦 Aponte para o marcador Hiro');
-    });
-
-    /* ── Eventos do modelo ───────────────────────────────────────── */
-    const bird = document.querySelector('#bird');
-    bird.addEventListener('model-loaded', () => showToast('✨ Modelo OK — aponte para o Hiro'));
-    bird.addEventListener('model-error',  () => showToast('⚠️ bird.glb não encontrado', true));
-
-    /* ── Fix vídeo (Android / iOS) ───────────────────────────────── */
-    function fixVideo() {
-      document.querySelectorAll('video').forEach(v => {
-        v.setAttribute('playsinline', '');
-        v.setAttribute('webkit-playsinline', '');
-        v.style.objectFit = 'cover';
-      });
-    }
-    window.addEventListener('load', () => {
-      fixVideo();
-      setTimeout(fixVideo, 800);
-      setTimeout(fixVideo, 2000);
-    });
-
-    /* ── Erros detalhados na tela ────────────────────────────────── */
-    window.addEventListener('error', e => {
-      const src  = (e.filename || '').split('/').pop() || '?';
-      const line = e.lineno || '?';
-      showToast(`❌ ${src}:${line} — ${e.message}`, true);
-      console.error('[AR Bird]', e);
-    });
-    window.addEventListener('unhandledrejection', e => {
-      showToast(`❌ ${e.reason}`, true);
-      console.error('[AR Bird Promise]', e.reason);
     });
   </script>
 </body>
