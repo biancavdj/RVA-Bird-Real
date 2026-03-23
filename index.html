@@ -1,201 +1,309 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Bird 🐦</title>
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; background: #000; }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    #ui {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-      pointer-events: none;
-    }
+<title>AR Bird 🐦</title>
 
-    #hint {
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(10px);
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 13px;
-      line-height: 1.7;
-      padding: 18px 24px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.12);
-      max-width: 320px;
-      text-align: center;
-      pointer-events: none;
-    }
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
 
-    #hint strong { color: #7dd3fc; font-size: 15px; }
-    #hint code {
-      background: rgba(255,255,255,0.12);
-      padding: 2px 7px;
-      border-radius: 5px;
-      font-size: 12px;
-      color: #fde68a;
-    }
+<style>
 
-    #hint .step {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      text-align: left;
-      margin: 6px 0;
-    }
+html, body {
+margin: 0;
+width: 100%;
+height: 100%;
+overflow: hidden;
+background: black;
+}
 
-    #hint .num {
-      background: #38bdf8;
-      color: #fff;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-    }
+/* remove botão VR */
+.a-enter-vr {
+display: none !important;
+}
 
-    #bottom-hint {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.5);
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 13px;
-      padding: 8px 18px;
-      border-radius: 30px;
-      backdrop-filter: blur(6px);
-      z-index: 999;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.6s;
-    }
-  </style>
+/* corrige zoom da câmera */
+video,
+canvas,
+.a-canvas,
+.arjs-video {
+object-fit: contain !important;
+width: 100% !important;
+height: 100% !important;
+}
+
+/* painel inicial */
+
+#ui {
+position: fixed;
+top:0;
+bottom:0;
+left:0;
+right:0;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+z-index:999;
+}
+
+#hint {
+
+background: rgba(0,0,0,0.7);
+
+color:white;
+
+padding:20px;
+
+border-radius:16px;
+
+max-width:320px;
+
+font-family:Segoe UI;
+
+text-align:center;
+}
+
+#bottom-hint {
+
+position:fixed;
+
+bottom:20px;
+
+left:50%;
+
+transform:translateX(-50%);
+
+background:rgba(0,0,0,0.6);
+
+color:white;
+
+padding:10px 18px;
+
+border-radius:30px;
+
+font-family:Segoe UI;
+
+opacity:0;
+
+transition:0.5s;
+
+z-index:999;
+
+}
+
+</style>
+
 </head>
+
 
 <body>
 
-  <div id="ui">
-    <div id="hint">
-      <strong>🐦 Como usar o AR Bird</strong><br><br>
+<div id="ui">
 
-      <div class="step">
-        <span class="num">1</span>
-        <span>Coloque o arquivo <code>bird.glb</code> na <strong>mesma pasta</strong> deste HTML</span>
-      </div>
+<div id="hint">
 
-      <div class="step">
-        <span class="num">2</span>
-        <span>Abra via servidor local:<br><code>python -m http.server 8080</code><br>ou use o Live Server do VS Code</span>
-      </div>
+<strong>🐦 Como usar</strong>
 
-      <div class="step">
-        <span class="num">3</span>
-        <span>No celular, use um link com <strong>HTTPS</strong>, como Netlify</span>
-      </div>
+<br><br>
 
-      <div class="step">
-        <span class="num">4</span>
-        <span>Aponte para o marcador Hiro e veja o pássaro aparecer ✨</span>
-      </div>
+Coloque <b>bird.glb</b> na mesma pasta do HTML
 
-      <br>
-      <span style="font-size:11px; color: #aaa;">Já colocou o arquivo? Clique abaixo.</span><br><br>
+<br><br>
 
-      <button
-        onclick="document.getElementById('ui').style.display='none'; document.getElementById('bottom-hint').style.opacity='1';"
-        style="background:#38bdf8; border:none; color:#fff; padding:9px 22px; border-radius:30px; font-size:13px; cursor:pointer; pointer-events:all;">
-        Já está pronto, vamos lá! 🐦
-      </button>
-    </div>
-  </div>
+Abra usando HTTPS (Netlify recomendado)
 
-  <div id="bottom-hint">🐦 Aponte para o marcador Hiro</div>
+<br><br>
 
-  <a-scene
-    embedded
-    arjs="sourceType: webcam; facingMode: environment; sourceWidth:1280; sourceHeight:960; displayWidth:1280; displayHeight:960; debugUIEnabled: false;"
-    renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
-    vr-mode-ui="enabled: false">
+Aponte para o marcador Hiro
 
-    <a-assets>
-      <a-asset-item id="bird-model" src="bird.glb"></a-asset-item>
-    </a-assets>
+<br><br>
 
-    <a-marker preset="hiro" id="marker">
+<button
 
-      <!-- sombra -->
-      <a-circle
-        position="0 0.005 0"
-        radius="0.35"
-        rotation="-90 0 0"
-        color="#000000"
-        opacity="0.22"
-        material="transparent: true">
-      </a-circle>
+onclick="
 
-      <!-- grupo central do modelo -->
-      <a-entity id="bird-wrapper" position="0 0 0">
+document.getElementById('ui').style.display='none';
 
-        <a-gltf-model
-          id="bird"
-          src="#bird-model"
-          position="0 0.08 0"
-          scale="0.22 0.22 0.22"
-          rotation="0 0 0"
-          animation-mixer="loop: repeat; clampWhenFinished: false"
-          animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
-        </a-gltf-model>
+document.getElementById('bottom-hint').style.opacity='1';
 
-      </a-entity>
+"
 
-      <!-- partículas baixas -->
-      <a-entity id="particles-low">
-        <a-sphere position="0.35 0.12 0"       radius="0.018" color="#38bdf8" opacity="0.85" animation="property: position; to: 0.35 0.35 0; dir: alternate; dur: 1600; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="-0.35 0.12 0"      radius="0.018" color="#86efac" opacity="0.8"  animation="property: position; to: -0.35 0.32 0; dir: alternate; dur: 1900; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.12 0.35"       radius="0.017" color="#fbbf24" opacity="0.9"  animation="property: position; to: 0 0.38 0.35; dir: alternate; dur: 1400; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.12 -0.35"      radius="0.018" color="#67e8f9" opacity="0.8"  animation="property: position; to: 0 0.34 -0.35; dir: alternate; dur: 2100; easing: easeInOutSine; loop: true"></a-sphere>
-      </a-entity>
+style="
 
-      <!-- partículas altas -->
-      <a-entity id="particles-high">
-        <a-sphere position="0.2 0.5 0"         radius="0.012" color="#38bdf8" opacity="0.7"  animation="property: position; to: 0.2 0.72 0; dir: alternate; dur: 1300; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="-0.2 0.5 0"        radius="0.012" color="#86efac" opacity="0.7"  animation="property: position; to: -0.2 0.68 0; dir: alternate; dur: 1800; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.5 0.2"         radius="0.012" color="#fbbf24" opacity="0.75" animation="property: position; to: 0 0.74 0.2; dir: alternate; dur: 1100; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.5 -0.2"        radius="0.012" color="#67e8f9" opacity="0.7"  animation="property: position; to: 0 0.7 -0.2; dir: alternate; dur: 2200; easing: easeInOutSine; loop: true"></a-sphere>
-      </a-entity>
+background:#38bdf8;
 
-    </a-marker>
+border:none;
 
-    <a-entity camera></a-entity>
-  </a-scene>
+padding:10px 22px;
 
-  <script>
-    const bird = document.querySelector('#bird');
-    const bottomHint = document.getElementById('bottom-hint');
+border-radius:30px;
 
-    bird.addEventListener('model-loaded', function () {
-      bottomHint.textContent = '✨ Pássaro carregado! Aponte para o marcador Hiro';
-      bottomHint.style.opacity = '1';
-    });
+color:white;
 
-    bird.addEventListener('model-error', function () {
-      bottomHint.textContent = '⚠️ bird.glb não encontrado. Coloque na mesma pasta do HTML.';
-      bottomHint.style.opacity = '1';
-    });
-  </script>
+cursor:pointer;
+
+">
+
+Começar
+
+</button>
+
+</div>
+
+</div>
+
+
+<div id="bottom-hint">
+
+🐦 Aponte para o marcador Hiro
+
+</div>
+
+
+
+<a-scene
+
+vr-mode-ui="enabled:false"
+
+renderer="antialias:true; alpha:true; logarithmicDepthBuffer:true"
+
+arjs="trackingMethod:best; sourceType:webcam; facingMode:environment; debugUIEnabled:false"
+
+>
+
+
+<a-assets>
+
+<a-asset-item
+
+id="bird-model"
+
+src="bird.glb"
+
+></a-asset-item>
+
+</a-assets>
+
+
+
+<a-marker preset="hiro">
+
+
+<a-circle
+
+position="0 0.005 0"
+
+radius="0.35"
+
+rotation="-90 0 0"
+
+color="black"
+
+opacity="0.2"
+
+></a-circle>
+
+
+
+<a-entity position="0 0 0">
+
+
+<a-gltf-model
+
+id="bird"
+
+src="#bird-model"
+
+position="0 0.08 0"
+
+scale="0.22 0.22 0.22"
+
+animation-mixer
+
+animation="property: rotation; to: 0 360 0; loop:true; dur:12000; easing:linear"
+
+>
+
+</a-gltf-model>
+
+
+</a-entity>
+
+
+
+</a-marker>
+
+
+<a-entity
+
+camera
+
+look-controls="enabled:false"
+
+></a-entity>
+
+
+</a-scene>
+
+
+
+<script>
+
+/* corrige zoom android */
+
+window.addEventListener("load", ()=>{
+
+setTimeout(()=>{
+
+document.querySelectorAll("video")
+
+.forEach(v=>{
+
+v.setAttribute("playsinline",true);
+
+v.style.objectFit="contain";
+
+});
+
+},1000);
+
+});
+
+
+/* status carregamento */
+
+const bird=document.querySelector("#bird");
+
+const hint=document.querySelector("#bottom-hint");
+
+
+bird.addEventListener("model-loaded",()=>{
+
+hint.innerText="✨ Modelo carregado com sucesso";
+
+hint.style.opacity=1;
+
+});
+
+
+bird.addEventListener("model-error",()=>{
+
+hint.innerText="⚠️ Arquivo bird.glb não encontrado";
+
+hint.style.opacity=1;
+
+});
+
+
+</script>
+
+
 
 </body>
+
 </html>
