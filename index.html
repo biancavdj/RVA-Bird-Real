@@ -50,14 +50,19 @@
       text-align: left;
       margin: 6px 0;
     }
+
     #hint .num {
       background: #38bdf8;
       color: #fff;
       border-radius: 50%;
-      width: 20px; height: 20px;
+      width: 20px;
+      height: 20px;
       min-width: 20px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
     }
 
     #bottom-hint {
@@ -82,17 +87,35 @@
 
 <body>
 
-  <!-- Instruções iniciais -->
   <div id="ui">
     <div id="hint">
       <strong>🐦 Como usar o AR Bird</strong><br><br>
-      <div class="step"><span class="num">1</span><span>Coloque o arquivo <code>bird.glb</code> na <strong>mesma pasta</strong> deste HTML</span></div>
-      <div class="step"><span class="num">2</span><span>Abra via servidor local:<br><code>python -m http.server 8080</code><br>ou use o <a href="https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer" target="_blank" style="color:#7dd3fc">Live Server do VS Code</a></span></div>
-      <div class="step"><span class="num">3</span><span>No celular? Use <strong>Netlify Drop</strong> ou <strong>ngrok</strong> para HTTPS</span></div>
-      <div class="step"><span class="num">4</span><span>Aponte para o <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" style="color:#7dd3fc">marcador Hiro</a> e veja o pássaro voar ✨</span></div>
+
+      <div class="step">
+        <span class="num">1</span>
+        <span>Coloque o arquivo <code>bird.glb</code> na <strong>mesma pasta</strong> deste HTML</span>
+      </div>
+
+      <div class="step">
+        <span class="num">2</span>
+        <span>Abra via servidor local:<br><code>python -m http.server 8080</code><br>ou use o Live Server do VS Code</span>
+      </div>
+
+      <div class="step">
+        <span class="num">3</span>
+        <span>No celular, use um link com <strong>HTTPS</strong>, como Netlify</span>
+      </div>
+
+      <div class="step">
+        <span class="num">4</span>
+        <span>Aponte para o marcador Hiro e veja o pássaro aparecer ✨</span>
+      </div>
+
       <br>
       <span style="font-size:11px; color: #aaa;">Já colocou o arquivo? Clique abaixo.</span><br><br>
-      <button onclick="document.getElementById('ui').style.display='none'; document.getElementById('bottom-hint').style.opacity='1';"
+
+      <button
+        onclick="document.getElementById('ui').style.display='none'; document.getElementById('bottom-hint').style.opacity='1';"
         style="background:#38bdf8; border:none; color:#fff; padding:9px 22px; border-radius:30px; font-size:13px; cursor:pointer; pointer-events:all;">
         Já está pronto, vamos lá! 🐦
       </button>
@@ -103,75 +126,55 @@
 
   <a-scene
     embedded
-    arjs="sourceType: webcam; facingMode: environment;"
+    arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false;"
     renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
     vr-mode-ui="enabled: false">
 
     <a-assets>
-      <a-asset-item id="cat-model" src="bird.glb"></a-asset-item>
+      <a-asset-item id="bird-model" src="bird.glb"></a-asset-item>
     </a-assets>
 
     <a-marker preset="hiro" id="marker">
 
-      <!-- ===== SOMBRA NO CHÃO ===== -->
+      <!-- sombra -->
       <a-circle
         position="0 0.005 0"
-        radius="0.45"
+        radius="0.35"
         rotation="-90 0 0"
         color="#000000"
         opacity="0.22"
         material="transparent: true">
       </a-circle>
 
-      <!-- ===== MODELO DO PÁSSARO ===== -->
-      <a-gltf-model
-        id="bird"
-        src="#cat-model"
-        position="0 0 0"
-        scale="0.4 0.4 0.4"
-        rotation="0 0 0"
-        animation-mixer="loop: repeat; clampWhenFinished: false"
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
-      </a-gltf-model>
+      <!-- grupo central do modelo -->
+      <a-entity id="bird-wrapper" position="0 0 0">
 
-      <!-- ===== PARTÍCULAS MÁGICAS ===== -->
+        <a-gltf-model
+          id="bird"
+          src="#bird-model"
+          position="0 0.08 0"
+          scale="0.22 0.22 0.22"
+          rotation="0 0 0"
+          animation-mixer="loop: repeat; clampWhenFinished: false"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
+        </a-gltf-model>
 
-      <!-- Anel de partículas baixo -->
+      </a-entity>
+
+      <!-- partículas baixas -->
       <a-entity id="particles-low">
-        <a-sphere position="0.5 0.15 0"       radius="0.025" color="#38bdf8" opacity="0.85" animation="property: position; to: 0.5 0.55 0; dir: alternate; dur: 1600; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="-0.5 0.15 0"      radius="0.022" color="#86efac" opacity="0.8"  animation="property: position; to: -0.5 0.5 0; dir: alternate; dur: 1900; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.15 0.5"       radius="0.02"  color="#fbbf24" opacity="0.9"  animation="property: position; to: 0 0.6 0.5; dir: alternate; dur: 1400; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.15 -0.5"      radius="0.026" color="#67e8f9" opacity="0.8"  animation="property: position; to: 0 0.5 -0.5; dir: alternate; dur: 2100; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0.35 0.15 0.35"   radius="0.018" color="#bae6fd" opacity="0.85" animation="property: position; to: 0.35 0.65 0.35; dir: alternate; dur: 1700; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="-0.35 0.15 -0.35" radius="0.02"  color="#a7f3d0" opacity="0.8"  animation="property: position; to: -0.35 0.58 -0.35; dir: alternate; dur: 2300; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="-0.35 0.15 0.35"  radius="0.022" color="#fde68a" opacity="0.85" animation="property: position; to: -0.35 0.62 0.35; dir: alternate; dur: 1500; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0.35 0.15 -0.35"  radius="0.019" color="#7dd3fc" opacity="0.8"  animation="property: position; to: 0.35 0.56 -0.35; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true"></a-sphere>
+        <a-sphere position="0.35 0.12 0"       radius="0.018" color="#38bdf8" opacity="0.85" animation="property: position; to: 0.35 0.35 0; dir: alternate; dur: 1600; easing: easeInOutSine; loop: true"></a-sphere>
+        <a-sphere position="-0.35 0.12 0"      radius="0.018" color="#86efac" opacity="0.8"  animation="property: position; to: -0.35 0.32 0; dir: alternate; dur: 1900; easing: easeInOutSine; loop: true"></a-sphere>
+        <a-sphere position="0 0.12 0.35"       radius="0.017" color="#fbbf24" opacity="0.9"  animation="property: position; to: 0 0.38 0.35; dir: alternate; dur: 1400; easing: easeInOutSine; loop: true"></a-sphere>
+        <a-sphere position="0 0.12 -0.35"      radius="0.018" color="#67e8f9" opacity="0.8"  animation="property: position; to: 0 0.34 -0.35; dir: alternate; dur: 2100; easing: easeInOutSine; loop: true"></a-sphere>
       </a-entity>
 
-      <!-- Anel de partículas alto -->
+      <!-- partículas altas -->
       <a-entity id="particles-high">
-        <a-sphere position="0.3 0.9 0"        radius="0.018" color="#38bdf8" opacity="0.7"  animation="property: position; to: 0.3 1.3 0; dir: alternate; dur: 1300; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="-0.3 0.9 0"       radius="0.015" color="#86efac" opacity="0.7"  animation="property: position; to: -0.3 1.25 0; dir: alternate; dur: 1800; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.9 0.3"        radius="0.016" color="#fbbf24" opacity="0.75" animation="property: position; to: 0 1.35 0.3; dir: alternate; dur: 1100; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0 0.9 -0.3"       radius="0.02"  color="#67e8f9" opacity="0.7"  animation="property: position; to: 0 1.2 -0.3; dir: alternate; dur: 2200; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="0.22 0.9 0.22"    radius="0.013" color="#bae6fd" opacity="0.65" animation="property: position; to: 0.22 1.4 0.22; dir: alternate; dur: 1600; easing: easeInOutSine; loop: true"></a-sphere>
-        <a-sphere position="-0.22 0.9 -0.22"  radius="0.014" color="#fde68a" opacity="0.7"  animation="property: position; to: -0.22 1.3 -0.22; dir: alternate; dur: 1400; easing: easeInOutSine; loop: true"></a-sphere>
-      </a-entity>
-
-      <!-- Estrelinhas girando (anel orbital) -->
-      <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 5000; easing: linear">
-        <a-sphere position="0.6 0.5 0"  radius="0.03"  color="#ffffff" opacity="0.9"></a-sphere>
-        <a-sphere position="-0.6 0.5 0" radius="0.022" color="#fbbf24" opacity="0.85"></a-sphere>
-        <a-sphere position="0 0.5 0.6"  radius="0.026" color="#7dd3fc" opacity="0.9"></a-sphere>
-        <a-sphere position="0 0.5 -0.6" radius="0.02"  color="#86efac" opacity="0.85"></a-sphere>
-      </a-entity>
-
-      <!-- Anel orbital rápido menor -->
-      <a-entity animation="property: rotation; to: 0 -360 15; loop: true; dur: 3000; easing: linear">
-        <a-sphere position="0.42 0.8 0"  radius="0.016" color="#38bdf8" opacity="0.95"></a-sphere>
-        <a-sphere position="-0.42 0.8 0" radius="0.016" color="#67e8f9" opacity="0.95"></a-sphere>
-        <a-sphere position="0 0.8 0.42"  radius="0.016" color="#fde68a" opacity="0.95"></a-sphere>
-        <a-sphere position="0 0.8 -0.42" radius="0.016" color="#a7f3d0" opacity="0.95"></a-sphere>
+        <a-sphere position="0.2 0.5 0"         radius="0.012" color="#38bdf8" opacity="0.7"  animation="property: position; to: 0.2 0.72 0; dir: alternate; dur: 1300; easing: easeInOutSine; loop: true"></a-sphere>
+        <a-sphere position="-0.2 0.5 0"        radius="0.012" color="#86efac" opacity="0.7"  animation="property: position; to: -0.2 0.68 0; dir: alternate; dur: 1800; easing: easeInOutSine; loop: true"></a-sphere>
+        <a-sphere position="0 0.5 0.2"         radius="0.012" color="#fbbf24" opacity="0.75" animation="property: position; to: 0 0.74 0.2; dir: alternate; dur: 1100; easing: easeInOutSine; loop: true"></a-sphere>
+        <a-sphere position="0 0.5 -0.2"        radius="0.012" color="#67e8f9" opacity="0.7"  animation="property: position; to: 0 0.7 -0.2; dir: alternate; dur: 2200; easing: easeInOutSine; loop: true"></a-sphere>
       </a-entity>
 
     </a-marker>
@@ -180,13 +183,17 @@
   </a-scene>
 
   <script>
-    document.querySelector('#bird').addEventListener('model-loaded', function () {
-      document.getElementById('bottom-hint').textContent = '✨ Pássaro carregado! Aponte para o marcador Hiro';
+    const bird = document.querySelector('#bird');
+    const bottomHint = document.getElementById('bottom-hint');
+
+    bird.addEventListener('model-loaded', function () {
+      bottomHint.textContent = '✨ Pássaro carregado! Aponte para o marcador Hiro';
+      bottomHint.style.opacity = '1';
     });
 
-    document.querySelector('#bird').addEventListener('model-error', function (e) {
-      document.getElementById('bottom-hint').textContent = '⚠️ bird.glb não encontrado. Coloque na mesma pasta!';
-      document.getElementById('bottom-hint').style.opacity = '1';
+    bird.addEventListener('model-error', function () {
+      bottomHint.textContent = '⚠️ bird.glb não encontrado. Coloque na mesma pasta do HTML.';
+      bottomHint.style.opacity = '1';
     });
   </script>
 
