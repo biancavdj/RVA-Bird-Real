@@ -1,309 +1,243 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>AR Bird 🐦</title>
-
-<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
-
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js" crossorigin="anonymous"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js" crossorigin="anonymous"></script>
 <style>
+* {
+  box-sizing: border-box;
+}
 
 html, body {
-margin: 0;
-width: 100%;
-height: 100%;
-overflow: hidden;
-background: black;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: black;
 }
 
-/* remove botão VR */
+/* Remove botão VR */
 .a-enter-vr {
-display: none !important;
+  display: none !important;
 }
 
-/* corrige zoom da câmera */
-video,
-canvas,
-.a-canvas,
-.arjs-video {
-object-fit: contain !important;
-width: 100% !important;
-height: 100% !important;
+/*
+  FIX DE ZOOM: NÃO usar object-fit: contain na câmera.
+  O AR.js/WebRTC usa object-fit: cover por padrão e funciona corretamente.
+  Forçar "contain" cria o efeito de zoom/distorção.
+*/
+video.arjs-video,
+video {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: cover !important; /* COVER — sem zoom, sem barra preta */
+  z-index: 0;
 }
 
-/* painel inicial */
-
-#ui {
-position: fixed;
-top:0;
-bottom:0;
-left:0;
-right:0;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-z-index:999;
+canvas.a-canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 1;
 }
 
-#hint {
-
-background: rgba(0,0,0,0.7);
-
-color:white;
-
-padding:20px;
-
-border-radius:16px;
-
-max-width:320px;
-
-font-family:Segoe UI;
-
-text-align:center;
+/* Painel inicial — z-index alto para ficar sobre tudo */
+#ui-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: all;
 }
 
-#bottom-hint {
-
-position:fixed;
-
-bottom:20px;
-
-left:50%;
-
-transform:translateX(-50%);
-
-background:rgba(0,0,0,0.6);
-
-color:white;
-
-padding:10px 18px;
-
-border-radius:30px;
-
-font-family:Segoe UI;
-
-opacity:0;
-
-transition:0.5s;
-
-z-index:999;
-
+#hint-box {
+  background: rgba(0, 0, 0, 0.78);
+  color: white;
+  padding: 24px 28px;
+  border-radius: 18px;
+  max-width: 320px;
+  width: 90%;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  line-height: 1.6;
 }
 
+#hint-box h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+#hint-box p {
+  margin: 6px 0;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+#btn-start {
+  margin-top: 18px;
+  background: #38bdf8;
+  border: none;
+  padding: 11px 28px;
+  border-radius: 30px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#btn-start:active {
+  background: #0ea5e9;
+}
+
+/* Toast de status na parte inferior */
+#status-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 9998;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#status-toast.visible {
+  opacity: 1;
+}
 </style>
-
 </head>
-
-
 <body>
 
-<div id="ui">
-
-<div id="hint">
-
-<strong>🐦 Como usar</strong>
-
-<br><br>
-
-Coloque <b>bird.glb</b> na mesma pasta do HTML
-
-<br><br>
-
-Abra usando HTTPS (Netlify recomendado)
-
-<br><br>
-
-Aponte para o marcador Hiro
-
-<br><br>
-
-<button
-
-onclick="
-
-document.getElementById('ui').style.display='none';
-
-document.getElementById('bottom-hint').style.opacity='1';
-
-"
-
-style="
-
-background:#38bdf8;
-
-border:none;
-
-padding:10px 22px;
-
-border-radius:30px;
-
-color:white;
-
-cursor:pointer;
-
-">
-
-Começar
-
-</button>
-
+<!-- Tela de introdução -->
+<div id="ui-overlay">
+  <div id="hint-box">
+    <h2>🐦 AR Bird</h2>
+    <p>Coloque <b>bird.glb</b> na mesma pasta do HTML</p>
+    <p>Abra via <b>HTTPS</b> (Netlify recomendado)</p>
+    <p>Aponte a câmera para o <b>marcador Hiro</b></p>
+    <button id="btn-start">Começar</button>
+  </div>
 </div>
 
-</div>
-
-
-<div id="bottom-hint">
-
-🐦 Aponte para o marcador Hiro
-
-</div>
-
-
+<!-- Toast de status -->
+<div id="status-toast">🐦 Aponte para o marcador Hiro</div>
 
 <a-scene
-
-vr-mode-ui="enabled:false"
-
-renderer="antialias:true; alpha:true; logarithmicDepthBuffer:true"
-
-arjs="trackingMethod:best; sourceType:webcam; facingMode:environment; debugUIEnabled:false"
-
+  vr-mode-ui="enabled: false"
+  renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true; colorManagement: true"
+  arjs="trackingMethod: best; sourceType: webcam; facingMode: environment; debugUIEnabled: false"
+  embedded
 >
+  <a-assets>
+    <a-asset-item id="bird-model" src="bird.glb"></a-asset-item>
+  </a-assets>
 
+  <a-marker preset="hiro">
+    <!-- Sombra sutil no chão -->
+    <a-circle
+      position="0 0.005 0"
+      radius="0.35"
+      rotation="-90 0 0"
+      color="#000000"
+      opacity="0.18"
+    ></a-circle>
 
-<a-assets>
+    <!-- Modelo do pássaro -->
+    <a-gltf-model
+      id="bird"
+      src="#bird-model"
+      position="0 0.08 0"
+      scale="0.22 0.22 0.22"
+      animation-mixer
+      animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
+    ></a-gltf-model>
+  </a-marker>
 
-<a-asset-item
-
-id="bird-model"
-
-src="bird.glb"
-
-></a-asset-item>
-
-</a-assets>
-
-
-
-<a-marker preset="hiro">
-
-
-<a-circle
-
-position="0 0.005 0"
-
-radius="0.35"
-
-rotation="-90 0 0"
-
-color="black"
-
-opacity="0.2"
-
-></a-circle>
-
-
-
-<a-entity position="0 0 0">
-
-
-<a-gltf-model
-
-id="bird"
-
-src="#bird-model"
-
-position="0 0.08 0"
-
-scale="0.22 0.22 0.22"
-
-animation-mixer
-
-animation="property: rotation; to: 0 360 0; loop:true; dur:12000; easing:linear"
-
->
-
-</a-gltf-model>
-
-
-</a-entity>
-
-
-
-</a-marker>
-
-
-<a-entity
-
-camera
-
-look-controls="enabled:false"
-
-></a-entity>
-
-
+  <a-entity camera look-controls="enabled: false"></a-entity>
 </a-scene>
 
-
-
 <script>
+  /* ── Botão Começar ───────────────────────────────────────────── */
+  document.getElementById('btn-start').addEventListener('click', function () {
+    document.getElementById('ui-overlay').style.display = 'none';
+    showToast('🐦 Aponte para o marcador Hiro');
+  });
 
-/* corrige zoom android */
+  /* ── Helpers de toast ────────────────────────────────────────── */
+  let toastTimer = null;
 
-window.addEventListener("load", ()=>{
+  function showToast(msg, persistent) {
+    const toast = document.getElementById('status-toast');
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    clearTimeout(toastTimer);
+    if (!persistent) {
+      toastTimer = setTimeout(() => toast.classList.remove('visible'), 4000);
+    }
+  }
 
-setTimeout(()=>{
+  /* ── Status do modelo ────────────────────────────────────────── */
+  const bird = document.querySelector('#bird');
 
-document.querySelectorAll("video")
+  bird.addEventListener('model-loaded', () => {
+    showToast('✨ Modelo carregado! Aponte para o Hiro');
+  });
 
-.forEach(v=>{
+  bird.addEventListener('model-error', () => {
+    showToast('⚠️ bird.glb não encontrado', true);
+  });
 
-v.setAttribute("playsinline",true);
+  /* ── Fix de zoom Android: garante que o vídeo use cover ──────── */
+  function fixVideoZoom() {
+    document.querySelectorAll('video').forEach(v => {
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.style.objectFit   = 'cover';
+      v.style.width       = '100vw';
+      v.style.height      = '100vh';
+      v.style.position    = 'fixed';
+      v.style.top         = '0';
+      v.style.left        = '0';
+    });
+  }
 
-v.style.objectFit="contain";
+  window.addEventListener('load', () => {
+    fixVideoZoom();
+    setTimeout(fixVideoZoom, 1000); /* reaplica após AR.js iniciar */
+    setTimeout(fixVideoZoom, 2500);
+  });
 
-});
+  /* ── Captura erros reais (substitui "Script error" genérico) ─── */
+  window.addEventListener('error', (e) => {
+    const msg = e.message || 'erro desconhecido';
+    const src = e.filename ? e.filename.split('/').pop() : '?';
+    const line = e.lineno || '?';
+    showToast(`❌ ${src}:${line} — ${msg}`, true);
+    console.error('[AR Bird Error]', e);
+  });
 
-},1000);
-
-});
-
-
-/* status carregamento */
-
-const bird=document.querySelector("#bird");
-
-const hint=document.querySelector("#bottom-hint");
-
-
-bird.addEventListener("model-loaded",()=>{
-
-hint.innerText="✨ Modelo carregado com sucesso";
-
-hint.style.opacity=1;
-
-});
-
-
-bird.addEventListener("model-error",()=>{
-
-hint.innerText="⚠️ Arquivo bird.glb não encontrado";
-
-hint.style.opacity=1;
-
-});
-
-
+  window.addEventListener('unhandledrejection', (e) => {
+    showToast(`❌ Promise: ${e.reason}`, true);
+    console.error('[AR Bird Promise Error]', e.reason);
+  });
 </script>
-
-
-
 </body>
-
 </html>
